@@ -1,0 +1,44 @@
+{
+  "original_report": {
+    "path": "C:\\Users\\Kanad Nerkar\\Downloads\\TrustFin_AI_Group_Project_Report.pdf",
+    "sha256": "7ef947689c4acd62307c958700168ed759e8397151032cebb0f79b2edd1bd043"
+  },
+  "diagrams": [
+    {
+      "name": "class diagram.png",
+      "sha256": "0b0bf079cb7934149c82aa30b4597cdb5a9aae811c4270c3998fa0ed4a5e154a"
+    },
+    {
+      "name": "Class_Diagram_Final.png",
+      "sha256": "91406669fe43c0d3ddd8a4030b5aa41b194329ae72dbedcd8a2b2fa2ca1b80c6"
+    },
+    {
+      "name": "Component_Diagram.jpeg",
+      "sha256": "34c9cb99d9309740de4f4d7bf5f5121c0a7596e8cc58a1f0cb0c105d9f817e3b"
+    },
+    {
+      "name": "deployment-diagram.png",
+      "sha256": "92cd2726a8380784bb22771400c3a6e7e94e60f7049eaccd399c43a1ef13d2e2"
+    },
+    {
+      "name": "methodology.svg",
+      "sha256": "f49654e189e319619c9b7a9191ef014b562005b1ef616fa8d3015d82a79ff0b9"
+    },
+    {
+      "name": "Package_Diagram.jpeg",
+      "sha256": "78a9d8e89420ee67299ba3d53fbc6fd14ee4fce5562d2f67bb72dbe7d933718c"
+    },
+    {
+      "name": "Sequence_Diagram_Updated.png",
+      "sha256": "f0a649b05361e7b5142db4ec24fed5e66473bcb8219ea83fce6634b109c480f1"
+    },
+    {
+      "name": "system architecture.png",
+      "sha256": "ef13c0fb64d095c7cf062b2cf3d9bf815414899b3042dd77fe6144501c7414bb"
+    },
+    {
+      "name": "Use_Case_Updated.png",
+      "sha256": "e8bf047ea296449589490360958590578f2e08280f42021f395dca3e568adce9"
+    }
+  ]
+}

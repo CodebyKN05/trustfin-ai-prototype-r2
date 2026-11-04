@@ -1,0 +1,73 @@
+{
+  "provenance": "Retained Phase 1 HTTP output, 4 November 2026; not a new Phase 2 experiment. Selected contributions retained from the full response.",
+  "applicant": {
+    "loan_type": "home_loan",
+    "Gender": "Female",
+    "Married": "Yes",
+    "Dependents": 1,
+    "Education": "Graduate",
+    "Employment_Status": "Salaried",
+    "Age": 35,
+    "Work_Experience": 10,
+    "Applicant_Income": 80000,
+    "Coapplicant_Income": 20000,
+    "Existing_EMI": 6000,
+    "Loan_Amount": 3500000,
+    "Loan_Term": 240,
+    "Property_Value": 5000000,
+    "Property_Area": "Urban",
+    "CIBIL_Score": 810,
+    "Missed_Payments_12M": 0
+  },
+  "prediction": {
+    "prediction": "Approved",
+    "probability": 0.9994001388549805,
+    "confidenceScore": 0.9994001388549805,
+    "modelVersion": "home_loan_v2",
+    "dossierId": "H-20261104-6D6924",
+    "trustScore": {
+      "faithfulness": 0.8448,
+      "stability": 0.9714285714285714,
+      "consistency": 0.5,
+      "fairness": 0.9997223615646362,
+      "overallTrustScore": 0.7885093790136065
+    },
+    "solvencyCheck": {
+      "monthlyEMI": 30373.81,
+      "existingEMI": 6000,
+      "totalMonthlyObligation": 36373.81,
+      "netDisposableIncome": 63626.19,
+      "totalIncome": 100000,
+      "dtiRatio": 0.3637,
+      "dtiPercent": "36.4%",
+      "status": "MODERATE",
+      "isSolvent": true
+    }
+  },
+  "shap": {
+    "CIBIL_Score": 4.510115146636963,
+    "FOIR": 0.9564787745475769,
+    "Missed_Payments_12M": 0.9515246152877808,
+    "LTV_Ratio": 0.8384475708007812,
+    "Gender_Male": -0.5730779767036438,
+    "Applicant_Income": 0.30985555052757263,
+    "Education_Not Graduate": 0.12855830788612366
+  },
+  "lime": {
+    "CIBIL_Score": 0.578388987131707,
+    "Missed_Payments_12M": 0.21362374323149705,
+    "LTV_Ratio": 0.09573422681925542,
+    "Gender_Male": -0.09054092472766387,
+    "FOIR": 0.07824093675115584,
+    "Applicant_Income": 0.0317238343748764,
+    "Employment_Status_Self-Employed": 0.027892707168466074
+  },
+  "tests": {
+    "selected_backend_passed": 14,
+    "additional_batch_passed": 1,
+    "additional_batch_failed": 4,
+    "frontend_passed": 18,
+    "frontend_failed": 7,
+    "browser_walkthrough": "not completed"
+  }
+}
