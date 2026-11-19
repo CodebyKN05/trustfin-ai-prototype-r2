@@ -1,0 +1,35 @@
+\chapter[PROJECT PLANNING]{Project Planning}
+
+This chapter presents the development work plan and its Gantt chart, showing the main dependencies between the model, explanations and application.
+
+\section{Development Work Plan}
+Data preparation and feature definitions precede model training. Explanation integration follows the fitted model, while the interface and API develop around the shared response structure. Testing and documentation overlap the later activities.
+
+Figure~\ref{fig:project-gantt} presents the sequence and overlap as a twelve-week work plan.
+
+\begin{figure}[H]
+\centering
+\begingroup
+\footnotesize\setstretch{1.0}\setlength{\tabcolsep}{2pt}\renewcommand{\arraystretch}{1.2}
+\newcommand{\work}{\textcolor{reportblue}{\rule{0.34cm}{0.22cm}}}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{4.5cm}*{12}{>{\centering\arraybackslash}X}}
+\toprule
+Activity & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10 & 11 & 12\\
+\midrule
+Problem study and requirements & \work & \work & & & & & & & & & & \\
+Synthetic data and features & & \work & \work & \work & & & & & & & & \\
+Model training and evaluation & & & & \work & \work & \work & & & & & & \\
+SHAP and LIME integration & & & & & & \work & \work & \work & & & & \\
+Explanation diagnostics & & & & & & & \work & \work & \work & & & \\
+Backend and persistence & & & & & \work & \work & \work & \work & \work & & & \\
+Interface and reporting & & & & & & & \work & \work & \work & \work & & \\
+Integration and testing & & & & & & & & & \work & \work & \work & \\
+Report and presentation & & & & & & & & & & \work & \work & \work\\
+\bottomrule
+\end{tabularx}
+\endgroup
+\caption{Week-based development work plan for TrustFin AI. Filled cells indicate planned activity.}\label{fig:project-gantt}
+\end{figure}
+
+\par\medskip\noindent
+This chapter has presented the work plan and shown the sequence and overlap of data, model, explanation and application tasks.

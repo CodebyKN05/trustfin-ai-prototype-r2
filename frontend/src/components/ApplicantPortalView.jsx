@@ -1,20 +1,39 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-    CheckCircle, AlertCircle, Check, X, Wallet, Download, FileText,
-    Eye, Loader2, ArrowLeft, RefreshCw, Printer, ShieldCheck
+    CheckCircle, AlertCircle, Wallet, Download, FileText,
+    Eye, Loader2, RefreshCw, Printer, AlertTriangle, X
 } from 'lucide-react';
 import RecourseSimulator from './RecourseSimulator';
+import PolicyCheckNotice from './PolicyCheckNotice';
 import SubmittedApplicationFormModal from './SubmittedApplicationFormModal';
 import { downloadLoanReportPdf, fetchLoanReportPdfBlob } from '../services/api';
+import { getUnderwritingAction } from '../utils/decisionAdvisory';
+import { getBankingLabel } from '../utils/bankingTerms';
 
-const ApplicantPortalView = ({ result, applicantData, onNewApplication }) => {
+const finiteNumber = (value) => {
+    if (value === null || value === undefined || value === '') return null;
+    const number = Number(value);
+    return Number.isFinite(number) ? number : null;
+};
+
+const formatCurrency = (value) => value === null
+    ? 'Unavailable'
+    : `₹${Math.round(value).toLocaleString('en-IN')}`;
+
+const ApplicantPortalContent = ({ result, applicantData, onNewApplication, onPreviewPdf }) => {
     const [downloadingPdf, setDownloadingPdf] = useState(false);
+    const [downloadError, setDownloadError] = useState(null);
     const [showApplicationForm, setShowApplicationForm] = useState(false);
     const [showPdfModal, setShowPdfModal] = useState(false);
     const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
     const [loadingPdfPreview, setLoadingPdfPreview] = useState(false);
     const [pdfError, setPdfError] = useState(null);
     const iframeRef = useRef(null);
+    const previewButtonRef = useRef(null);
+    const applicationButtonRef = useRef(null);
+    const pdfRequestId = useRef(0);
+
+    useEffect(() => () => { pdfRequestId.current += 1; }, []);
 
     // Clean up cached blob URL on unmount
     useEffect(() => {
@@ -28,36 +47,98 @@ const ApplicantPortalView = ({ result, applicantData, onNewApplication }) => {
     if (!result) return null;
 
     const isApproved = result.prediction === 'Approved';
-    const monthlyIncome = result.solvencyCheck ? result.solvencyCheck.totalIncome : 0;
-    const monthlyEMI = result.solvencyCheck ? result.solvencyCheck.monthlyEMI : 0;
-    const existingEMI = result.solvencyCheck?.existingEMI ?? (Number(applicantData?.Existing_EMI) || 0);
-    const totalObligation = result.solvencyCheck?.totalMonthlyObligation ?? (monthlyEMI + existingEMI);
-    const netSurplus = result.solvencyCheck?.netDisposableIncome ?? (monthlyIncome - totalObligation);
-    const dtiRatioVal = result.solvencyCheck ? (result.solvencyCheck.dtiRatio * 100) : 0;
+    const isRejected = result.prediction === 'Rejected';
+    const hasPrediction = isApproved || isRejected;
+    const isPersonalLoan = applicantData?.loan_type
+        ? applicantData.loan_type === 'personal_loan'
+        : result.modelVersion?.startsWith('personal_loan') || Boolean(applicantData?.Loan_Purpose);
+    const isHomeLoan = applicantData?.loan_type === 'home_loan'
+        || result.modelVersion?.startsWith('home_loan')
+        || applicantData?.Property_Value != null || applicantData?.Property_Area != null;
+    const productName = isPersonalLoan ? 'Personal loan' : isHomeLoan ? 'Home loan' : 'Loan';
+    const reference = result.dossierId || result.evaluationId || null;
+    const applicantIncome = finiteNumber(applicantData?.Applicant_Income);
+    const coapplicantIncome = finiteNumber(applicantData?.Coapplicant_Income);
+    const recordedIncome = finiteNumber(result.solvencyCheck?.totalIncome);
+    const monthlyIncome = isPersonalLoan
+        ? applicantIncome ?? recordedIncome
+        : recordedIncome ?? (applicantIncome === null ? null : applicantIncome + (coapplicantIncome ?? 0));
+    const incomeSource = isPersonalLoan || !(coapplicantIncome > 0)
+        ? 'Applicant income'
+        : 'Applicant + co-applicant income';
+    const monthlyEMI = finiteNumber(result.solvencyCheck?.monthlyEMI);
+    const existingEMI = finiteNumber(result.solvencyCheck?.existingEMI) ?? finiteNumber(applicantData?.Existing_EMI);
+    const totalObligation = finiteNumber(result.solvencyCheck?.totalMonthlyObligation)
+        ?? (monthlyEMI !== null && existingEMI !== null ? monthlyEMI + existingEMI : null);
+    const debtRatio = finiteNumber(result.solvencyCheck?.dtiRatio);
+    const hasAffordability = debtRatio !== null && debtRatio >= 0;
+    const dtiRatioVal = hasAffordability ? debtRatio * 100 : null;
+    const affordabilityFailed = result.solvencyCheck?.isSolvent === false
+        || result.solvencyCheck?.status === 'INSOLVENT'
+        || (hasAffordability && debtRatio > 0.5);
+    const loanAmount = finiteNumber(applicantData?.Loan_Amount);
+    const loanTerm = finiteNumber(applicantData?.Loan_Term);
+    const creditScore = finiteNumber(applicantData?.CIBIL_Score);
+    const canExport = applicantIncome > 0 && loanAmount > 0 && loanTerm > 0;
+    const canSimulate = canExport && existingEMI !== null
+        && (isPersonalLoan || finiteNumber(applicantData?.Property_Value) > 0);
+    const hasApplication = applicantData && Object.keys(applicantData).length > 0;
+    const underwritingAction = getUnderwritingAction(result, applicantData);
+    const needsReview = !hasAffordability || affordabilityFailed || underwritingAction.tier !== 'AUTO_APPROVE';
+    const bannerClass = isRejected ? 'bg-red-50 border-red-300 text-red-900'
+        : needsReview || !hasPrediction ? 'bg-amber-50 border-amber-300 text-amber-900'
+        : 'bg-green-50 border-green-300 text-green-900';
+    const reviewFindings = [];
+    if (hasAffordability) {
+        reviewFindings.push(`Total monthly repayments use ${dtiRatioVal.toFixed(1)}% of ${isPersonalLoan ? 'the applicant income' : 'the income'} used for this assessment.`);
+        if (debtRatio > 0.5) {
+            reviewFindings.push('This is above the project’s configured 50% review limit. A bank officer needs to review repayment affordability.');
+        } else if (affordabilityFailed) {
+            reviewFindings.push('The recorded affordability check requires a bank officer’s review.');
+        }
+    } else {
+        reviewFindings.push('Affordability details are unavailable for this assessment. Ask a bank officer to review the submitted income and repayments.');
+    }
+    if (existingEMI !== null) {
+        reviewFindings.push(`Existing monthly EMIs of ${formatCurrency(existingEMI)} ${existingEMI === 0 ? 'were declared' : 'are included in total repayments'}.`);
+    }
 
-    // SHAP sorted for adverse factors
-    const shapSorted = [...result.shap.features].sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution));
+    const shapFeatures = Array.isArray(result.shap?.features) ? result.shap.features : [];
+    const modelFactors = shapFeatures
+        .filter(f => typeof f?.feature === 'string' && Number.isFinite(f.contribution))
+        .filter(f => isApproved ? f.contribution > 0 : isRejected && f.contribution < 0)
+        .sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution))
+        .slice(0, 3);
 
     const handleOpenPdfPreview = async () => {
+        if (onPreviewPdf) return onPreviewPdf();
         setShowPdfModal(true);
         setPdfError(null);
-        if (!pdfBlobUrl) {
+        if (!pdfBlobUrl && !loadingPdfPreview) {
+            const requestId = pdfRequestId.current;
             setLoadingPdfPreview(true);
             try {
                 const blob = await fetchLoanReportPdfBlob(applicantData, result);
+                if (requestId !== pdfRequestId.current) return;
                 const url = window.URL.createObjectURL(blob);
                 setPdfBlobUrl(url);
             } catch (err) {
                 console.error("PDF Preview generation error:", err);
-                setPdfError("Failed to generate credit assessment report preview.");
+                if (requestId === pdfRequestId.current) setPdfError("The report preview could not be loaded. Try again.");
             } finally {
-                setLoadingPdfPreview(false);
+                if (requestId === pdfRequestId.current) setLoadingPdfPreview(false);
             }
         }
     };
 
     const handleClosePdfModal = () => {
         setShowPdfModal(false);
+        previewButtonRef.current?.focus();
+    };
+
+    const handleCloseApplicationForm = () => {
+        setShowApplicationForm(false);
+        applicationButtonRef.current?.focus();
     };
 
     const handlePrintPdf = () => {
@@ -74,13 +155,14 @@ const ApplicantPortalView = ({ result, applicantData, onNewApplication }) => {
     };
 
     const handleDownloadPdf = async () => {
-        if (!applicantData || !result) return;
+        if (!canExport || downloadingPdf) return;
         setDownloadingPdf(true);
+        setDownloadError(null);
         try {
             await downloadLoanReportPdf(applicantData, result);
         } catch (err) {
             console.error("PDF generation error:", err);
-            alert("Failed to download credit assessment report. Please verify service status.");
+            setDownloadError('The report could not be downloaded. Try again.');
         } finally {
             setDownloadingPdf(false);
         }
@@ -96,11 +178,11 @@ const ApplicantPortalView = ({ result, applicantData, onNewApplication }) => {
                         Applicant Portal
                     </span>
                     <h2 className="text-base font-bold text-gray-900 mt-1 uppercase tracking-tight">
-                        Credit Assessment & Guidance
+                        Loan Assessment and Guidance
                     </h2>
                 </div>
 
-                <div className="flex items-center gap-2">
+                {onNewApplication && <div className="flex items-center gap-2">
                     <button
                         type="button"
                         onClick={onNewApplication}
@@ -109,7 +191,7 @@ const ApplicantPortalView = ({ result, applicantData, onNewApplication }) => {
                         <RefreshCw className="w-3.5 h-3.5" />
                         Start New Assessment
                     </button>
-                </div>
+                </div>}
             </div>
 
             {/* Credit Assessment Report Container */}
@@ -122,20 +204,22 @@ const ApplicantPortalView = ({ result, applicantData, onNewApplication }) => {
                             TrustFin AI Credit Assessment
                         </span>
                         <h2 className="text-xl font-extrabold text-gray-900 mt-1 uppercase tracking-tight">
-                            {isApproved ? 'Credit Assessment Report' : 'Credit Assessment Report'}
+                            Credit Assessment Report
                         </h2>
                         <p className="text-xs text-gray-500 mt-0.5">
-                            Loan Application Assessment • Issued on {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            {productName} assessment
                         </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                         <span className="text-xs font-mono font-bold bg-gray-100 border border-gray-300 px-2 py-1 rounded-sm text-gray-700">
-                            Ref: {result?.dossierId || 'TF-ASMT-849201'}
+                            {reference ? `Ref: ${reference}` : 'Reference unavailable'}
                         </span>
                         <button
                             type="button"
+                            ref={previewButtonRef}
                             onClick={handleOpenPdfPreview}
-                            className="px-2.5 py-1 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 rounded-sm text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors shadow-xs"
+                            disabled={!canExport}
+                            className="px-2.5 py-1 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 rounded-sm text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
                             title="Preview Credit Assessment Report"
                         >
                             <Eye className="w-3.5 h-3.5 text-gov-blue" />
@@ -144,6 +228,8 @@ const ApplicantPortalView = ({ result, applicantData, onNewApplication }) => {
                         <button
                             type="button"
                             onClick={() => setShowApplicationForm(true)}
+                            ref={applicationButtonRef}
+                            disabled={!hasApplication}
                             className="px-2.5 py-1 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 rounded-sm text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors shadow-xs"
                             title="View submitted application form"
                         >
@@ -153,7 +239,7 @@ const ApplicantPortalView = ({ result, applicantData, onNewApplication }) => {
                         <button
                             type="button"
                             onClick={handleDownloadPdf}
-                            disabled={downloadingPdf}
+                            disabled={downloadingPdf || !canExport}
                             className="px-3 py-1 bg-gov-blue hover:bg-blue-900 text-white border border-blue-900 rounded-sm text-xs font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-colors disabled:opacity-50 shadow-xs"
                             title="Download Credit Assessment Report"
                         >
@@ -163,24 +249,36 @@ const ApplicantPortalView = ({ result, applicantData, onNewApplication }) => {
                     </div>
                 </div>
 
+                {downloadError && !showPdfModal && <p role="alert" className="mb-4 rounded-sm border border-red-300 bg-red-50 p-3 text-sm text-red-800">{downloadError}</p>}
+                {!canExport && <p className="mb-4 text-sm text-gray-600">Complete submitted application details are required to generate the PDF report.</p>}
+
+                <dl className="mb-5 grid grid-cols-1 gap-3 rounded-sm border border-gray-200 bg-gray-50 p-3 sm:grid-cols-3">
+                    <div><dt className="text-xs text-gray-600">Requested loan amount</dt><dd className="mt-1 font-semibold text-gray-900">{formatCurrency(loanAmount)}</dd></div>
+                    <div><dt className="text-xs text-gray-600">Loan term</dt><dd className="mt-1 font-semibold text-gray-900">{loanTerm === null ? 'Unavailable' : `${loanTerm} months`}</dd></div>
+                    <div><dt className="text-xs text-gray-600">Submitted CIBIL score</dt><dd className="mt-1 font-semibold text-gray-900">{creditScore ?? 'Unavailable'}</dd></div>
+                </dl>
+
                 {/* Determination Header Banner */}
-                <div className={`p-4 rounded-sm border mb-6 flex items-start gap-3 ${
-                    isApproved ? 'bg-green-50 border-green-300 text-green-900' : 'bg-red-50 border-red-300 text-red-900'
-                }`}>
-                    {isApproved ? (
+                <div className="mb-5"><PolicyCheckNotice result={result} /></div>
+                <div data-testid="applicant-outcome" className={`p-4 rounded-sm border mb-6 flex items-start gap-3 ${bannerClass}`}>
+                    {isApproved && !needsReview ? (
                         <CheckCircle className="w-8 h-8 text-green-700 shrink-0 mt-0.5" />
-                    ) : (
+                    ) : isRejected ? (
                         <AlertCircle className="w-8 h-8 text-red-700 shrink-0 mt-0.5" />
+                    ) : (
+                        <AlertTriangle className="w-8 h-8 text-amber-700 shrink-0 mt-0.5" />
                     )}
                     <div>
                         <h3 className="font-extrabold text-xl uppercase tracking-wide">
-                            {isApproved ? 'Assessment Complete' : 'Assessment Requires Further Review'}
+                            {hasPrediction ? `Model prediction: ${result.prediction}` : 'Model prediction unavailable'}
                         </h3>
                         <p className="text-sm mt-1 leading-relaxed">
-                            {isApproved 
-                                ? 'The application has been assessed using the provided financial information, credit indicators, and debt-to-income metrics. The assessment indicates that the application meets the configured eligibility criteria and is ready for further review.' 
-                                : 'The assessment indicates that the application does not currently meet the configured eligibility criteria. The factors below explain the key considerations identified by the assessment.'}
+                            This is the model's assessment of the submitted details. The lender must review the application before making a final lending decision.
                         </p>
+                        {hasPrediction && <span className={`inline-block mt-3 px-2.5 py-1 text-xs font-bold rounded-sm border ${hasAffordability ? underwritingAction.badgeClass : 'bg-amber-600 text-white border-amber-700'}`}>
+                            {hasAffordability ? underwritingAction.badgeText : 'AFFORDABILITY DETAILS UNAVAILABLE'}
+                        </span>}
+                        {affordabilityFailed && <p className="text-sm font-semibold mt-2">The monthly repayment check requires a bank officer’s review.</p>}
                     </div>
                 </div>
 
@@ -194,153 +292,96 @@ const ApplicantPortalView = ({ result, applicantData, onNewApplication }) => {
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         <div className="p-3 bg-gray-50 border border-gray-200 rounded-sm">
                             <span className="text-[11px] text-gray-500 uppercase font-semibold">Total Monthly Income</span>
-                            <p className="text-base font-bold text-gray-900 font-mono mt-1">₹{Math.round(monthlyIncome).toLocaleString('en-IN')}</p>
-                            <span className="text-[10px] text-gray-500">Applicant + Co-Applicant</span>
+                            <p className="text-base font-bold text-gray-900 font-mono mt-1">{formatCurrency(monthlyIncome)}</p>
+                            <span className="text-[10px] text-gray-500">{incomeSource}</span>
                         </div>
                         <div className="p-3 bg-gray-50 border border-gray-200 rounded-sm">
                             <span className="text-[11px] text-gray-500 uppercase font-semibold">Proposed Monthly EMI</span>
-                            <p className="text-base font-bold text-gray-900 font-mono mt-1">₹{Math.round(monthlyEMI).toLocaleString('en-IN')}</p>
+                            <p className="text-base font-bold text-gray-900 font-mono mt-1">{formatCurrency(monthlyEMI)}</p>
                             <span className="text-[10px] text-gray-500">New loan installment</span>
                         </div>
                         <div className="p-3 bg-gray-50 border border-gray-200 rounded-sm">
                             <span className="text-[11px] text-gray-500 uppercase font-semibold">Total Monthly Debt</span>
-                            <p className="text-base font-bold text-gray-900 font-mono mt-1">₹{Math.round(totalObligation).toLocaleString('en-IN')}</p>
-                            <span className="text-[10px] text-gray-500">{existingEMI > 0 ? `Incl. ₹${Math.round(existingEMI).toLocaleString('en-IN')} existing` : 'No prior active debt'}</span>
+                            <p className="text-base font-bold text-gray-900 font-mono mt-1">{formatCurrency(totalObligation)}</p>
+                            <span className="text-[10px] text-gray-500">{existingEMI === null ? 'Existing EMI unavailable' : existingEMI > 0 ? `Incl. ${formatCurrency(existingEMI)} existing` : 'Existing EMI entered: ₹0'}</span>
                         </div>
                         <div className="p-3 bg-gray-50 border border-gray-200 rounded-sm">
-                            <span className="text-[11px] text-gray-500 uppercase font-semibold">Debt-to-Income (DTI)</span>
-                            <p className={`text-base font-bold font-mono mt-1 ${dtiRatioVal <= 50 ? 'text-green-700' : 'text-red-700'}`}>
-                                {dtiRatioVal.toFixed(1)}%
+                            <span className="text-[11px] text-gray-500 uppercase font-semibold">Monthly Debt / Income</span>
+                            <p className={`text-base font-bold font-mono mt-1 ${!hasAffordability ? 'text-gray-600' : dtiRatioVal <= 50 ? 'text-green-700' : 'text-red-700'}`}>
+                                {hasAffordability ? `${dtiRatioVal.toFixed(1)}%` : 'Unavailable'}
                             </p>
-                            <span className="text-[10px] text-gray-500">Maximum limit: 50.0%</span>
+                            <span className="text-[10px] text-gray-500">Configured review limit: 50.0%</span>
                         </div>
                     </div>
 
                     {/* Visual Affordability Bar */}
-                    <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-sm">
+                    {hasAffordability && <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-sm">
                         <div className="flex justify-between text-xs font-semibold text-gray-700 mb-1">
-                            <span>EMI Share of Income: {dtiRatioVal.toFixed(1)}%</span>
+                            <span>Total Debt Share of Income: {dtiRatioVal.toFixed(1)}%</span>
                             <span>Limit: 50.0%</span>
                         </div>
-                        <div className="w-full bg-gray-200 h-3 rounded-xs relative overflow-hidden">
+                        <div role="progressbar" aria-label="Monthly repayments as a share of income" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100, dtiRatioVal)} aria-valuetext={`${dtiRatioVal.toFixed(1)}% of monthly income`} className="w-full bg-gray-200 h-3 rounded-xs relative overflow-hidden">
                             <div 
                                 className={`h-full transition-all ${dtiRatioVal <= 35 ? 'bg-green-600' : dtiRatioVal <= 50 ? 'bg-amber-500' : 'bg-red-600'}`} 
                                 style={{ width: `${Math.min(100, dtiRatioVal)}%` }}
                             ></div>
                         </div>
-                        <div className="flex justify-between text-[10px] text-gray-500 mt-1">
-                            <span>Safe (&lt; 35%)</span>
-                            <span>Moderate (35% - 50%)</span>
-                            <span className="font-bold text-red-600">High Risk (&gt; 50%)</span>
+                        <div className="flex flex-wrap justify-between gap-2 text-[10px] text-gray-500 mt-1">
+                            <span>Up to 35%</span>
+                            <span>Above 35% to 50%</span>
+                            <span className="font-bold text-red-600">Above 50% — review required</span>
                         </div>
-                    </div>
+                    </div>}
                 </div>
 
-                {/* Specific Determination Breakdown */}
-                {isApproved ? (
-                    <div className="space-y-4">
-                        <div className="p-4 bg-green-50 border border-green-200 rounded-sm">
-                            <h4 className="text-xs font-bold text-green-900 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                                <Check className="w-4 h-4 text-green-700" />
-                                Key Factors Supporting the Assessment
-                            </h4>
-                            <ul className="text-xs text-green-800 space-y-1.5">
-                                <li className="flex items-start gap-1.5">
-                                    <span className="text-green-600 font-bold">•</span>
-                                    <span><strong>Affordable Monthly EMI:</strong> Your monthly EMI of ₹{monthlyEMI.toLocaleString('en-IN')} leaves a comfortable balance of ₹{netSurplus.toLocaleString('en-IN')} each month.</span>
-                                </li>
-                                <li className="flex items-start gap-1.5">
-                                    <span className="text-green-600 font-bold">•</span>
-                                    <span><strong>Good Credit History:</strong> Clear credit bureau record with regular past repayment track record.</span>
-                                </li>
-                                <li className="flex items-start gap-1.5">
-                                    <span className="text-green-600 font-bold">•</span>
-                                    <span><strong>Stable Household Cashflow:</strong> Steady income sufficient to cover monthly loan repayments.</span>
-                                </li>
-                            </ul>
-                        </div>
-
-                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-sm">
-                            <h4 className="text-xs font-bold text-blue-900 uppercase tracking-wider mb-1">
-                                Recommended Next Steps
-                            </h4>
-                            <ol className="text-xs text-blue-800 list-decimal list-inside space-y-1 mt-2">
-                                <li>Review the assessment and supporting factors with the lending institution.</li>
-                                <li>Complete any additional documentation requested by the lender.</li>
-                                <li>Proceed with the lender's standard verification and approval process.</li>
-                            </ol>
-                        </div>
+                <div className="space-y-4">
+                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-sm">
+                        <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-2">Review Findings</h4>
+                        <ul className="list-disc pl-4 text-sm text-gray-700 space-y-2">
+                            {reviewFindings.map(reason => <li key={reason}>{reason}</li>)}
+                        </ul>
                     </div>
-                ) : (
-                    <div className="space-y-4">
-                        
-                        {/* Adverse Action Reasons */}
-                        <div className="p-4 bg-red-50 border border-red-200 rounded-sm">
-                            <h4 className="text-xs font-bold text-red-900 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                                <X className="w-4 h-4 text-red-700" />
-                                Factors Requiring Further Review
-                            </h4>
-                            <p className="text-[11px] text-gray-600 mb-2">
-                                The following factors contributed to the assessment outcome:
-                            </p>
-                            <ul className="text-xs text-red-800 space-y-2">
-                                {dtiRatioVal > 50 && (
-                                    <li className="flex items-start gap-1.5">
-                                        <span className="text-red-600 font-bold">1.</span>
-                                        <span>
-                                            <strong>High Debt Burden (DTI Exceeded):</strong> Your proposed monthly EMI of ₹{monthlyEMI.toLocaleString('en-IN')} represents {dtiRatioVal.toFixed(1)}% of your verified income. Standard bank safety rules cap monthly EMI at 50% of income.
-                                        </span>
-                                    </li>
-                                )}
-                                {shapSorted.some(f => f.feature === 'Credit_History' && f.contribution < 0) && (
-                                    <li className="flex items-start gap-1.5">
-                                        <span className="text-red-600 font-bold">2.</span>
-                                        <span>
-                                            <strong>Credit History Score:</strong> Credit bureau reports indicate past defaults or irregular repayment history.
-                                        </span>
-                                    </li>
-                                )}
-                                {shapSorted.some(f => f.feature === 'Applicant_Income' && f.contribution < 0) && (
-                                    <li className="flex items-start gap-1.5">
-                                        <span className="text-red-600 font-bold">3.</span>
-                                        <span>
-                                            <strong>Loan Amount vs. Income:</strong> The requested loan amount exceeds the safe limit for your declared income.
-                                        </span>
-                                    </li>
-                                )}
-                            </ul>
-                        </div>
-
-                        {/* Interactive What-If Eligibility Sandbox (Recourse Simulator) */}
-                        <RecourseSimulator applicantData={applicantData} result={result} />
-
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-sm">
+                        <h4 className="text-xs font-bold text-blue-900 uppercase tracking-wider mb-2">Main Model Factors (SHAP)</h4>
+                        <ul className="list-disc pl-4 text-sm text-blue-900 space-y-2">
+                            {modelFactors.map(f => {
+                                const rawField = Object.keys(applicantData || {}).find(field => f.feature === field || f.feature.startsWith(`${field}_`));
+                                return <li key={f.feature}>{getBankingLabel(rawField || f.feature)} {f.contribution > 0 ? 'increased' : 'reduced'} the model's approval output.</li>;
+                            })}
+                        </ul>
+                        {!modelFactors.length && <p className="text-sm text-gray-600">No matching explanation factors are available for this result.</p>}
                     </div>
-                )}
+                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-sm">
+                        <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-1">Recommended Next Steps</h4>
+                        <p className="text-sm text-gray-700">Review the submitted details and model factors with a bank officer. Provide updated income, debt or credit details for a fresh assessment when needed.</p>
+                    </div>
+                    {canSimulate && (!isApproved || underwritingAction.tier !== 'AUTO_APPROVE') && <RecourseSimulator applicantData={applicantData} result={result} />}
+                </div>
 
                 <div className="mt-6 pt-4 border-t border-gray-200 flex flex-col sm:flex-row justify-between items-center text-[11px] text-gray-500 gap-2">
                     <span>TrustFin AI • Explainable Credit Decision Support</span>
-                    <span>Fair Lending & Responsible Credit Evaluation</span>
+                    <span>Model assessment subject to lender review</span>
                 </div>
 
             </div>
 
             <SubmittedApplicationFormModal
                 isOpen={showApplicationForm}
-                onClose={() => setShowApplicationForm(false)}
+                onClose={handleCloseApplicationForm}
                 applicantData={applicantData}
-                applicationReference={result?.dossierId || 'TF-ASMT-849201'}
+                applicationReference={reference}
             />
 
             {/* In-App PDF Preview Modal */}
             {showPdfModal && (
-                <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-                    <div className="bg-white w-full max-w-4xl h-[88vh] rounded-sm shadow-xl flex flex-col overflow-hidden border border-gray-400">
+                <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4" onClick={event => { if (event.target === event.currentTarget) handleClosePdfModal(); }}>
+                    <div role="dialog" aria-modal="true" aria-labelledby="applicant-pdf-preview-title" onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); handleClosePdfModal(); } }} className="bg-white w-full max-w-4xl h-[88vh] rounded-sm shadow-xl flex flex-col overflow-hidden border border-gray-400">
                         
                         {/* Modal Header */}
                         <div className="px-4 py-3 bg-gov-blue text-white flex items-center justify-between border-b border-blue-900">
                             <div className="flex items-center gap-2">
                                 <Eye className="w-4 h-4 text-yellow-400" />
-                                <h3 className="text-xs font-bold uppercase tracking-wider">
+                                <h3 id="applicant-pdf-preview-title" className="text-xs font-bold uppercase tracking-wider">
                                     Credit Assessment Report Preview
                                 </h3>
                             </div>
@@ -366,13 +407,16 @@ const ApplicantPortalView = ({ result, applicantData, onNewApplication }) => {
                                 <button
                                     type="button"
                                     onClick={handleClosePdfModal}
+                                    aria-label="Close PDF preview"
+                                    autoFocus
                                     className="p-1 hover:bg-blue-800 text-white rounded-sm text-xs ml-2 cursor-pointer"
                                 >
-                                    ✕
+                                    <X className="w-4 h-4" />
                                 </button>
                             </div>
                         </div>
 
+                        {downloadError && <p role="alert" className="border-b border-red-300 bg-red-50 p-3 text-sm text-red-800">{downloadError}</p>}
                         {/* Modal Body */}
                         <div className="flex-1 bg-gray-100 flex items-center justify-center overflow-hidden">
                             {loadingPdfPreview ? (
@@ -385,6 +429,7 @@ const ApplicantPortalView = ({ result, applicantData, onNewApplication }) => {
                                     <AlertCircle className="w-8 h-8 text-red-600 mx-auto mb-2" />
                                     <p className="text-sm font-bold text-gray-900">Unable to Render Preview</p>
                                     <p className="text-xs text-gray-600 mt-1">{pdfError}</p>
+                                    <button type="button" onClick={handleOpenPdfPreview} className="mt-3 rounded-sm bg-gov-blue px-3 py-2 text-xs font-semibold text-white">Try again</button>
                                 </div>
                             ) : pdfBlobUrl ? (
                                 <iframe
@@ -402,5 +447,10 @@ const ApplicantPortalView = ({ result, applicantData, onNewApplication }) => {
         </div>
     );
 };
+
+// A different assessment gets fresh preview state, including for history loads.
+const ApplicantPortalView = (props) => (
+    <ApplicantPortalContent key={JSON.stringify([props.result, props.applicantData])} {...props} />
+);
 
 export default ApplicantPortalView;
