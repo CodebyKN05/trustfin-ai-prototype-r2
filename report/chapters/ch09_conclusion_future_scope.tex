@@ -1,44 +1,41 @@
 \chapter[CONCLUSION AND FUTURE SCOPE]{Conclusion and Future Scope}
 
-This chapter draws together the project outcomes and the evidence discussed in the report. It summarises the contribution of the application, identifies the limits of the current evaluation and sets out the next steps for data, explanation validation and operational development.
+This chapter brings together the project outcomes and evidence mentioned in the report. It provides a summary of the contribution of the application, pinpoints the scope of the existing assessment, and defines the subsequent development of the data, explanation validation, and operations.
 
 \section{Conclusions}
-TrustFin AI connects two product-specific loan classifiers with local explanations and diagnostic checks in a working decision-support application. A user can submit a home-loan or personal-loan profile, inspect the model output, review SHAP and LIME contributions, see the financial summary and retain the assessment through history or PDF export.
+TrustFin AI links two product-specific loan classifiers with local explanations and diagnostic checks and brings it together to a working application for a decision support. A user can upload a profile for a home-loan or a personal-loan, view the results of the model, check for the contributions of SHAP and LIME, view the financial summary and keep the assessment by history or export it as a pdf file.
 
-The main contribution is the connection between these functions. Prediction, explanation, financial arithmetic and persistence are often examined separately during development. Bringing them into one workflow makes it easier to see how a submitted field becomes a model coordinate, a displayed reason and a saved assessment value.
+The most important one is the relationship between these functions. Prediction, explanation, financial arithmetic and persistence are usually studied in isolation from one another during development. It's easier to understand when they're in a single workflow as a submitted field, a displayed reason and a saved assessment value.
 
-The product distinction is also important. The home-loan pipeline includes property context and LTV, while the personal-loan pipeline uses purpose and card utilisation. Shared application logic coordinates these paths without treating their feature definitions as identical.
+The distinction of the product is also crucial. The home-loan pipeline covers property context and LTV, and personal-loan pipeline includes purpose and card utilisation. These paths are coordinated by shared application logic which does not assume that their feature definitions are the same.
 
-The saved test metrics show high performance against the generated approval labels: 97.00\% accuracy for home loans and 97.33\% for personal loans. These results describe the recorded stratified test partitions. They support the use of the models within the project's simulation, not a claim about actual repayment outcomes.
+High performance is reflected in the test metrics saved: 98.50\% accuracy for home loans and 96.50\% accuracy for personal loans against the generated approval labels. These results are for the stratified test partitions recorded. They endorse the use of the models as part of the project's simulation, not increased likelihood of repayment.
 
-The explanation stage provides an inspectable local account of each model output. Its usefulness depends on the output space, feature representation and perturbation assumptions. The four current diagnostics expose selected aspects of that behaviour, but their weighted sum does not remove those assumptions or establish a universal measure of trust.
+The explanation stage is an inspectable local account of each model output. The three explanation diagnostics and separate Gender-sensitivity check reveal some aspects of that behaviour. Their assumptions remain important, and the combined Trust Score is not a universal measurement of trust.
 
-The application also demonstrates the value of keeping confidence separate from explanation evidence. A high predicted-class probability can accompany a result that needs further review. Likewise, an explanation can accurately describe a model that relies on an undesirable dependency. The final assessment therefore needs to remain a decision-support output rather than an automatic authority to lend.
+The application also illustrates the importance of maintaining a separation between confidence and evidence for explanation. A result may have a high predicted-class probability with a further review required. Similarly, a model that has a bad dependency can be accurately described by an explanation. The final assessment should then be an output of the decision support and not an automatic authority to lend.
 
 \section{Limitations of the Current Work}
-The generated datasets contain authored relationships and a deliberate Gender-dependent adjustment near a label boundary. Evaluation on another split of those records cannot establish fairness or generalisation for a lending population. No external repayment dataset, temporal validation or probability-calibration study is included in the product evidence.
+The datasets produced include authored relationships and do not apply a Gender-dependent label adjustment. Evaluation on synthetic records will not prove generalisation and fairness for a lending population. The product evidence does not contain any external validation or probability-calibration study for repayment.
 
-The explanation checks have specific limits. Faithfulness uses zero masking and a custom score mapping; stability uses one transformed-space perturbation; consistency considers leading feature names without their signs; and the online fairness function compares one binary input flip. These measurements need a broader validation study before being used as research-backed acceptance criteria.
+The explanation checks have limitations. Local concordance evaluates a shortened reconstruction at the original input; stability covers only the selected nearby financial changes; and consistency compares leading features and their directions. The separate fairness function compares one binary input flip. Wider validation is needed before using these checks as research-based acceptance criteria.
 
-The current application also lacks server-side authentication and role enforcement. The what-if calculator performs affordability arithmetic without a fresh model prediction. Stored records and PDFs support review, but they do not form a cryptographically verified audit trail or a signed lending decision.
+This current application also does not provide the server-side authentication or role enforcement. The what-if calculator can calculate affordability arithmetics without a new model prediction. Records and PDFs may be stored and reviewed, but are not a cryptographically verifiable audit trail or a lending decision signed by the lender.
 
 \section{Future Scope}
-\subsection{Data and Model Evaluation}
-The first extension should be a lawful, representative and appropriately de-identified dataset with a clearly defined outcome. It would allow evaluation of missingness, data leakage, time-related changes, subgroup errors and model calibration. An interpretable baseline and repeated evaluation would help determine whether the selected model adds useful predictive value.
+\begin{enumerate}
+\item \textbf{Evaluation with Real Lending Records:} Future work could utilize the use of representative loan records, provided with appropriate permission with personal details removed. Testing against well-defined results, such as actual repayments (where available), would help gauge the effectiveness of the system beyond more artificially created applications.
 
-The data-generation process can still serve as a controlled test environment. Its role should be explicit, with separate scenarios for ordinary financial patterns and known failure conditions. Results from those scenarios should remain distinguishable from evidence about real applicants.
+\item \textbf{Broader Model Testing:} The loan models could be compared to simpler models and tested to various applicant groups and time periods. This would assist in the detection of prediction errors, changes in the distribution of loans and whether the probabilities reported match the observed results. The generated records may further be used for tests of known failure conditions.
 
-\subsection{Explanation Evaluation}
-Further work should examine whether the explanation metrics distinguish useful explanations from corrupted or misleading ones. Perturbations should describe valid applications and preserve the relationships between raw financial inputs and derived features. The sensitivity of conclusions to neighbourhood choice, reference values and score weights also needs to be measured.
+\item \textbf{Improved Explanation Checks:} Further evaluation might include the ability to determine whether the system provides useful explanation or misleading explanation. Adjustments during these checks should be realistic and maintain the relationships among the income, loan amounts and monthly payments. Another comparison for explanations might include the direction and magnitude of each contribution as well as differences among the groups of applicants.
 
-Both SHAP and LIME should be evaluated according to their own semantics. Comparing feature names is informative, but it does not establish agreement in direction or magnitude. A local explanation-quality study could also compare results across applicant groups, provided that the test, group definitions and sample uncertainty are stated clearly.
+\item \textbf{Trust Score Evaluation:} A future study might determine if the Trust Score is useful for bank officers to look more closely at explanations. It may be advisable to explore its weights and thresholds in the study before giving it a more powerful meaning.
 
-The Trust Score would benefit from an evaluation tied to a specific use. For example, a study could examine whether it identifies explanations that reviewers should inspect more closely. The existing display thresholds should remain project rules until such evidence supports a stronger interpretation.
+\item \textbf{Secure Access and Record Management:} Future versions can have verified user accounts, access control based on the service, and more powerful privacy controls. Industry standards for retaining and discarding applicant records, combined with more reliable monitoring of storage and controlled database updating, will help to facilitate broader usage.
 
-\subsection{Application Development}
-Before wider use, the service would need authenticated access, server-side permissions, privacy controls and a clear retention policy for application records. Versioned database migrations, visible persistence status, secure configuration and monitored deployment would strengthen the operational workflow.
-
-A model-backed scenario endpoint could extend the what-if calculator. Such a feature would need to show exactly which inputs changed and keep a hypothetical result separate from the original assessment. It should also prevent users from interpreting a changed scenario as an approved lending action.
+\item \textbf{Extended What-if Assessments:} One way in which the current affordability calculator could be expanded is by generating a new model assessment when selected application information is altered. Users could view the revised scenario and be able to compare it to the original assessment and understand exactly what changes had been made. Each scenario would be explicitly stated as a hypothetical exercise and not as an approval for a loan.
+\end{enumerate}
 
 \par\medskip\noindent
-This chapter has brought together the software contribution, the available evaluation and the limits of the current system. It has identified the next steps in data quality, model assessment, explanation validation and application controls that would give future development a stronger foundation.
+This chapter has brought together the software contribution, the available evaluation and the limits of the current system.  It has defined the next steps in data quality, model evaluation, explanations validator and application controls to provide a firmer ground for future developments.

@@ -25,7 +25,7 @@ x = np.arange(2)
 for offset, label, color in [(-.18, 'Approved', '#245c86'), (.18, 'Rejected', '#b76b3e')]:
     bars = ax.bar(x+offset, [int(c[label]) for c in counts], .36, label=label, color=color)
     ax.bar_label(bars, padding=3)
-ax.set_xticks(x, products); ax.set_ylabel('Generated records'); ax.set_ylim(0, 1850)
+ax.set_xticks(x, products); ax.set_ylabel('Generated records'); ax.set_ylim(0, max(int(c.max()) for c in counts) * 1.2)
 ax.legend(frameon=False, loc='upper right'); ax.spines[['top','right']].set_visible(False)
 fig.tight_layout(); fig.savefig(out/'dataset_class_distribution.pdf'); plt.close(fig)
 metrics = [json.loads((PROJECT / f'models/{stem}/metrics.json').read_text()) for stem in stems]
@@ -36,6 +36,6 @@ for offset, record, label, color in zip([-.18,.18], metrics, products, ['#245c86
     bars = ax.bar(x+offset, [record[k] for k in keys], .36, label=label, color=color)
     ax.bar_label(bars, labels=[f'{record[k]:.3f}' for k in keys], padding=3, fontsize=8)
 ax.set_xticks(x, ['Accuracy','Precision','Recall','F1','ROC-AUC']); ax.set_ylim(0,1.12)
-ax.set_ylabel('Saved metric value'); ax.legend(loc='lower right', frameon=False)
+ax.set_ylabel('Saved metric value'); ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.14), ncol=2, frameon=False)
 ax.spines[['top','right']].set_visible(False)
 fig.tight_layout(); fig.savefig(out/'saved_model_metrics.pdf'); plt.close(fig)

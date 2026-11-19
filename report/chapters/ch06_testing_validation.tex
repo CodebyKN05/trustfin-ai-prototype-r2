@@ -1,12 +1,12 @@
 \chapter[TESTING AND VALIDATION]{Testing and Validation}
 
-This chapter explains the verification approach used for the main application paths. It distinguishes software behaviour from classifier performance, then considers data preparation, financial calculations, explanation scores, repeatability, API responses, persistence and reporting. It also identifies the limits of the evidence available for the current system.
+This chapter describes the verification method adopted for the major application routes. It separates out the software behaviour from the classifier performance, and then takes into account data preparation, financial calculations, explanation scores, repeatability, API responses, persistence and reporting. It also defines the boundaries of the evidence that is available for the existing system.
 
 \section{Validation Approach and Scope}
 \subsection{Verification Approach}
-TrustFin AI has several kinds of outputs, and each needs an appropriate check. A correct EMI calculation does not establish that the classifier predicts accurately. A successful HTTP response does not show that an explanation describes the model well. Likewise, a high saved ROC-AUC says nothing about whether a PDF displays the same information as the result screen.
+TrustFin AI has multiple types of outputs, each of which requires a specific type of check. A correct EMI calculation does not imply that the classifier is correct in its predictions. A successful HTTP response does not indicate that an explanation is a good description of the model. Similarly, a high saved ROC-AUC does not indicate that a PDF contains the same information as the result screen.
 
-The project uses backend Pytest modules and frontend Vitest modules to exercise selected software behaviour. Training scripts calculate classification metrics on a held-out split. The online route produces request-level explanation diagnostics. These forms of verification are kept separate in this chapter so that one cannot be mistaken for evidence of another.
+The project has Pytest modules for the backend and Vitest modules for the frontend to test specific software behaviour. The classification metrics in training scripts are computed on a held-out split. The online route generates request-level explanation diagnostics. In this chapter these types of verification are separated so that one type of verification is not confused with evidence of another type of verification.
 
 \begin{table}[htbp]\centering\small
 \caption{Verification areas and evidence}\label{tab:testing-summary}
@@ -15,70 +15,70 @@ Area & Evidence available & Property addressed\\\midrule
 Backend application & Pytest modules for API, persistence, products, explanations and reporting & Selected software paths and contracts.\\
 Frontend interface & Vitest tests for the client, form, history and batch views & Selected user interactions and request handling.\\
 Classifier evaluation & Product metric JSON written by training scripts & Performance against generated hold-out labels.\\
-Online diagnostics & Four component values in each assessment response & Behaviour under the implemented explanation checks.\\\bottomrule
+Online diagnostics & Three explanation checks and a separate Gender-sensitivity check & Behaviour under the implemented diagnostics.\\\bottomrule
 \end{tabularx}\end{table}
 
 \subsection{Scope of Validation}
-The available checks support inspection of software contracts, financial arithmetic and generated-data model performance. They do not establish population fairness, calibrated probabilities, causal explanations, production security or externally validated Trust Score thresholds. These questions require evaluation designs beyond a local application's unit and integration tests.
+The checks that are available include software contracts, financial arithmetic and generated-data model performance. They do not set population fairness, calibrated probabilities, causal explanations, production security or externally validated Trust Score thresholds. These questions need evaluation designs other than the unit and integration tests of a local application.
 
 \section{Data and Model Validation}
 \subsection{Dataset and Preprocessing Checks}
-The current product CSVs each contain 3,000 records. Inspection checks row and column counts, missing values, duplicate complete rows, supported target labels and product-specific fields. These checks help detect an accidental change in data shape before training or inference reaches a more complicated failure.
+Each of the current product CSVs has 3,000 records. Checks row and column counts, missing values, duplicate complete rows, supported target labels and product-specific fields. These checks can be used to identify a shape change in the data that was not intentional before training or inference can proceed to more complex failure.
 
-The target and loan identifier are separated from the predictors. Training uses a stratified split with 80\% of records for fitting and 20\% for evaluation. The categorical encoder and numerical scaler are fitted on the training predictors only. Their output order must agree with the feature names saved beside the classifier.
+The target is separated from the predictors, which are the target and loan identifier. The training is done with 80\% of the records for training and 20\% for test. The categorical encoder and numerical scaler are only fit on the training predictors. The output order should match with the feature names saved next to the classifier.
 
-A useful preprocessing check follows one record through the feature function and fitted transformer. It verifies that the resulting vector has the expected number of coordinates: 20 for the home-loan pipeline and 21 for the personal-loan pipeline. This is a representation check, not a check that the resulting prediction is desirable.
+A helpful pre-processing check: one record goes through the feature function and fitted transformer. It checks that the resulting vector contains the desired number of coordinates: 20 for the home-loan pipeline and 21 for the personal-loan pipeline. This is not a check of the desired outcome of the resulting prediction, it is a representation check.
 
 \subsection{Financial Calculation Checks}
-The feature functions calculate amortised EMI, FOIR and, for home loans, LTV. Their outputs can be checked independently of the machine-learning model. An arithmetic comparison should use the same principal, term and illustrative interest rate as the relevant product function.
+The feature functions calculate amortised EMI, FOIR and for home loans, LTV. They can be validated separately from the machine-learning model. The same principal, term and illustrative interest rate should be used in an arithmetic comparison as the product function.
 
-The monthly obligation includes both existing EMI and the proposed instalment. Omitting the existing amount can make an application appear more affordable than it is. Home-loan FOIR uses the sum of applicant and co-applicant income, while personal-loan FOIR uses applicant income. The boundary cases therefore need to be tested separately for the two products.
+The monthly commitment is for the current EMI as well as the proposed EMI. Leaving out the balance due can make an application look more affordable than it is. The FOIR for a home-loan is based on the total income of the applicant and co-applicant, whereas the FOIR for a personal-loan is based on the applicant's income. The boundary cases are thus to be tested separately for the two products.
 
-The API labels the financial status as optimal up to 35\%, moderate above 35\% through 50\%, and insolvent above 50\%. Values immediately below, at and above a boundary are useful checks for comparison operators and rounding. These are configured project categories. A test must not assume that the model class itself is overwritten when the financial summary becomes insolvent, because the current route returns those outputs separately.
+The API classifies the financial status as optimal up to 35\%, moderate from 35\% to 50\%, and insolvent from 50\% and up. Values just below, just at and just above a boundary are good values to compare with in comparison operators and rounding. These are project categories that are set up. A test should not assume that the model class is overwritten when the financial summary becomes insolvent, as the current route returns those outputs separately.
 
 \subsection{Model Evaluation Procedure}
-Each product training script evaluates 600 held-out records using accuracy, precision, recall, F1-score and ROC-AUC. Stratification retains a similar label distribution in the two partitions. A fixed seed helps reproduce the partition under a compatible environment.
+The evaluation of each product training script is based on 600 held out records with accuracy, precision, recall, F1-score and ROC-AUC. The two partitions have a similar distribution of labels. A fixed seed is used to reproduce the partition in an environment that is compatible.
 
-The fitted preprocessor must remain paired with the classifier. Loading a different scaler or a reordered feature list may still produce a numerical vector, but the model would interpret the coordinates incorrectly. Model evaluation therefore depends on artifact consistency as well as on the calculation of a metric.
+The preprocessor that is fitted should be kept with the classifier. If a different scaler is loaded or a different feature list is reordered, it may return a numerical vector, but the model would misinterpret the coordinates. Model evaluation is thus dependent on the consistency of the artifacts as well as on the calculation of a metric.
 
-The stored product metrics describe a single generated-data split. They are not repeated cross-validation results or measurements on an external loan population. The results chapter reports them in that form, without substituting older legacy-model metadata or results from other experimental versions.
+The stored product metrics include the generated holdout split and separate independent synthetic and boundary datasets. They are not cross validation results or measurements on an external loan population. They are reported in that form in the results chapter, and not replaced by older legacy-model metadata or results from other versions of the experiments.
 
 \section{Explanation and Diagnostic Checks}
 \subsection{SHAP and LIME Output Checks}
-Both wrappers return a \texttt{StandardExplanation} containing feature name, value, contribution and direction. A structural check confirms that the returned names align with the model representation and that each contribution is a finite value. The direction label must follow the implemented sign threshold rather than an unrelated display convention.
+Both wrappers return a \texttt{StandardExplanation} with feature name, value, contribution and direction. A structural check verifies that the returned names correspond to the model representation and that each contribution is a finite value. The direction label should be after the implemented sign threshold, not after some other display convention.
 
-SHAP explains the transformed XGBoost input. Its contribution values for binary tree models are generally expressed in the raw output margin used by TreeExplainer. They should not be added to percentages in the interface. LIME's returned terms describe its local approximation for the approval class. Their meaning also depends on the conditions created by the tabular explainer.
+SHAP provides an explanation of the transformed input to XGBoost. The contribution value of the binary tree models is typically given as the raw output margin that TreeExplainer uses. These should NOT appear in the interface as percentages. The local approximation of the approval class is returned in LIME's terms. Their meaning is also contingent on the conditions they set up with the tabular explainer.
 
-A repeatability check evaluates the same submitted profile twice and compares the returned feature contributions. The applicant-derived seed is intended to make LIME sampling and the stability perturbation repeatable. A matching repeated result shows reproducibility for that input and environment. It does not show that the explanation is accurate, that all nearby records behave similarly, or that library upgrades preserve identical output.
+A repeatability check evaluates the same submitted profile twice and compares the returned feature contributions. An application-derived seed supports repeatable LIME sampling; stability uses deterministically constructed neighbours. If the repeated result is the same, the result is reproducible for this input and environment. It does not demonstrate the correctness of the explanation, that all the records in the vicinity behave in the same way, or that library improvements maintain the same output.
 
 \subsection{Checks on the Four Diagnostics}
-The faithfulness function selects supporting SHAP features, masks the corresponding transformed coordinates, measures a probability difference and applies its piecewise scaling. Numerical checks should cover the no-feature fallback and both sides of its cutoff. The absolute difference and custom scale are part of the implemented definition; a test should not silently replace them with a different published metric.
+Faithfulness checks should verify each method's top-five reconstruction, the local-concordance calculation and its 60/40 combination. Missing or inconsistent reconstruction terms should make the check unavailable rather than supply an invented score. The calculation tests the original input and does not validate all explanation behaviour.
 
-Stability compares the original SHAP contributions with those obtained after one seeded Gaussian perturbation. Its Spearman correlation is mapped into the interval from zero to one. Identical ranked vectors, reversed ranks and constant vectors provide useful boundary cases for checking the calculation and its undefined-correlation handling.
+Stability checks should verify the construction of valid nearby applications, recalculation of derived fields, rank and direction agreement, and the mean across neighbours. Fewer than two distinct processed neighbours or an uninformative original explanation should make the check unavailable.
 
-Consistency uses Jaccard overlap of the top-three feature-name sets. Complete overlap gives one and disjoint sets give zero. Partial overlap checks the union denominator. Because signs are not part of this score, opposite contribution directions can still receive credit when the feature names coincide. That is a limitation of what is measured, not a reason to alter the expected Jaccard result in a test.
+Consistency combines top-five Jaccard feature overlap with agreement in the directions of shared nonzero contributions. Tests should cover complete and partial overlap, disjoint sets and opposing directions, including cases where no directions can be compared.
 
-The live fairness routine compares approval probabilities before and after a binary Gender flip. A check should retain the other normalised values and apply the product feature function to both profiles. The function's exception path currently returns one, so a failure to calculate the comparison is not distinguishable from perfect direct invariance through that scalar alone. This limits its use as an audit indicator.
+The live fairness routine compares the approval probability before and after a binary Gender flip, with other supplied fields held fixed. The product feature function is applied to both profiles. A failed comparison returns zero, not one; the scalar alone cannot distinguish failure from maximum sensitivity. Fairness is separate from the Trust Score.
 
 \section{API and Persistence Validation}
 \subsection{API and Product Routing Checks}
-The API tests exercise both product identifiers and inspect the prediction response. Important fields include the class, approval probability, confidence value, explanation arrays, solvency summary, component scores and dossier identifier. Product-specific fields must reach the appropriate pipeline; property features should not be substituted for personal-loan purpose or utilisation fields.
+The API tests product identifiers and the prediction response. The fields that are important are class, approval probability, confidence value, explanation arrays, solvency summary, component scores and dossier identifier. Product-specific fields should be sent to the correct pipeline and property features should not be used as a personal-loan purpose or property utilisation field.
 
-Request-schema checks and batch-row checks have different entry points. The single-record endpoint uses Pydantic validation and registry normalisation. CSV processing works row by row and records validation reasons for flawed records. A batch test should check both the processed rows and the unusable rows, including their original positions.
+There are different entry points for request-schema checks and batch-row checks. The single-record endpoint uses Pydantic validation and registry normalisation. CSV processing is row by row and records reason for bad records. A batch test should test the rows that have been processed and the rows that are not usable, as well as the original positions of these rows.
 
-The current suite also contains assertions written against earlier identifiers and preset contracts. Test descriptions and fixed expectations therefore need to be interpreted against the actual route behaviour. The presence of a test file is not treated here as a claim that every assertion in the suite currently passes.
+The current suite also includes assertions that are written against previous identifiers and pre-defined contracts. The descriptions of tests and fixed expectations must then be understood in the context of the actual route behaviour. Here the existence of a test file does not imply that all the assertions in the suite pass at the moment.
 
 \subsection{Persistence and History Checks}
-Persistence tests follow an assessment from insertion to retrieval. The stored record should preserve its dossier reference, submitted input and complete response. History summaries use selected scalar fields; a detailed record uses the saved response where available. Retrieval should not regenerate an explanation and present it as the original saved output.
+The persistence tests are based on an evaluation from insertion to retrieval. The dossier reference, input and complete response should be maintained in the stored record. History summaries are based on selected scalar fields, and a detailed record is based on the saved response, if available. Do not re-create an explanation and display it as the original saved output.
 
-Database checks must use an isolated test database. The application can initialise local SQLite and fall back to it when a configured PostgreSQL connection fails. Verification should distinguish a computed assessment from a successfully committed record, particularly for a batch where a transaction failure can affect several evaluations.
+A test database will be used for database checks. The application can start up using local SQLite and switch to it if it cannot connect to a configured PostgreSQL connection. The verification should be able to tell the difference between an evaluation that has been computed and an evaluation that has been successfully committed, especially if the transaction failure impacts multiple evaluations in a batch.
 
-Deletion checks concern the evaluation or batch selected by its identifier. Since the schema links batches and predictions through an application-managed batch value, linked-record handling belongs to route logic. It is not provided by a declared foreign-key cascade.
+The deletion checks are about the evaluation or batch identified by its identifier. Because the schema is connected to batches and predictions via an application-managed batch value, linked-record handling is part of route logic. It is not declared as a foreign key cascade.
 
 \section{Interface and PDF Checks}
-Frontend tests cover selected form interactions, API requests, history displays and batch upload paths. Beyond those interactions, a review should compare the result shown in the applicant view with the summary and audit views for the same response. Different presentations should not turn the same model output into conflicting statements.
+Frontend tests include certain form interactions, API requests, history displays and batch upload paths. In addition to those interactions, a review should be done to compare the result in the applicant view to the summary and audit views of the same response. The same model output should not be presented in different ways to give conflicting messages.
 
-PDF checks verify that the endpoint returns a readable document and that its application reference, product, amounts and score values correspond to the supplied assessment. The exported document is an assessment report; a high Trust Score alone is not a lending authorisation. The what-if calculator should likewise be interpreted as a financial recalculation, since it does not request a new classifier output.
+PDF checks ensure that the endpoint returns a readable document and that the application reference, product, amounts and scores values returned correspond to the provided assessment. The document exported is an assessment report and a high Trust Score does not constitute a lending authorisation. The what-if calculator should also be interpreted as a financial recalculation, as it does not ask for a new output from the classifier.
 
 \par\medskip\noindent
-This chapter has described the checks relevant to data preparation, financial calculations, prediction, explanation, scoring, APIs, persistence and reporting. It has also separated repeatable software behaviour from the stronger evidence needed to validate a model or explanation for lending use.
+This chapter has outlined the checks that are pertinent to data preparation, financial calculations, prediction, explanation, scoring, APIs, persistence and reporting. It has also distinguished between the more repeatable software behaviour and the more compelling evidence required to validate a model or explanation for lending use.

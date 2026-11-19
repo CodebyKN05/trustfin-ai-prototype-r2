@@ -1,13 +1,14 @@
 \chapter*{Abstract}
 \addcontentsline{toc}{chapter}{ABSTRACT}
 
-A loan classifier can return an approval decision without giving the applicant or reviewing officer a useful account of the result. TrustFin AI addresses this review problem by connecting product-specific prediction with local explanations and explicit checks on those explanations.
+Loan assessment plays an important role in determining an applicant's eligibility for financial assistance. However, understanding the reasons behind an approval or rejection can be difficult. TrustFin AI is an explainable loan assessment system designed to make this process more transparent for applicants and bank officers.
 
-The system supports home-loan and personal-loan applications through separate XGBoost models and preprocessing pipelines. Product feature functions calculate monthly instalments and fixed-obligation-to-income ratio; the home-loan path also calculates loan-to-value ratio. TreeSHAP and tabular LIME provide local feature contributions. The backend calculates the implemented faithfulness, stability, top-feature consistency and Gender-flip diagnostics, then combines them into a weighted Trust Score. Prediction probability remains a separate output.
+The system supports home-loan and personal-loan applications by analysing financial details such as income, credit score, existing loan obligations, requested loan amount and repayment period. It uses machine learning to estimate loan approval outcomes and explain the factors influencing each prediction. It also provides financial indicators, including estimated monthly instalments and repayment burden, along with what-if simulations to explore the effect of changes in applicant details.
 
-A React interface presents applicant and bank-officer views, while FastAPI coordinates evaluation, batch processing, stored history and PDF reporting. SQLAlchemy supports local SQLite storage or a configured PostgreSQL connection. The application brings these functions together so that a result can be reviewed alongside its submitted values, financial summary and explanation data.
+TrustFin AI offers applicants a simplified assessment summary and provides bank officers with facilities to review applications, compare records, revisit previous assessments and generate reports. Explanation validation checks further examine the reliability and consistency of the generated explanations.
 
-Each product dataset contains 3,000 generated records. The saved stratified test metrics report 97.00\% accuracy and 0.9978 ROC-AUC for home loans, and 97.33\% accuracy and 0.9963 ROC-AUC for personal loans. These measurements concern generated approval labels, not observed repayment outcomes. The custom Trust Score is an experimental diagnostic summary rather than a calibrated measure of correctness or lending suitability. The project demonstrates an integrated explanation-review workflow while identifying the data, metric and operational evaluation needed for wider use.
+The project demonstrates the use of explainable machine learning in financial decision support. Its development and evaluation are based on synthetically generated loan records, and further testing with real lending data is necessary to establish its practical applicability.
 
-\noindent\textbf{Keywords:} Explainable AI, loan assessment, XGBoost, SHAP, LIME, explanation validation, Trust Score.
+
+\noindent\textbf{Keywords:} Loan assessment, explainable machine learning, loan approval prediction, financial decision support, explanation validation, what-if simulations.
 \clearpage

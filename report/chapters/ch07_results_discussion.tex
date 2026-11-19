@@ -1,27 +1,27 @@
 \chapter[RESULTS AND DISCUSSION]{Results and Discussion}
 
-This chapter examines the generated datasets and the results saved for the two product classifiers. It then discusses the approval-rate ratios, local explanation outputs and the assessment presented by the interface. The discussion distinguishes the recorded measurements from conclusions that would require a separate evaluation study.
+This chapter investigates the datasets generated, and the results that are saved for the classifiers for the two product types. It then talks about the ratios of approval rate, the outputs of local explanations and the local assessment that is presented by the interface. The discussion separates the recorded measurements from the conclusions which may need an evaluation study.
 
 \section{Evaluation Setting and Dataset Characteristics}
 \subsection{Evaluation Setting}
-The current training scripts use 3,000 generated records per product. A stratified 80/20 split with random state 42 gives 2,400 training records and 600 held-out records. The fitted encoder and scaler are learned from the training partition before the classifier is evaluated on the test partition.
+The current training scripts use 3,000 generated records per product. If the distribution of the state is stratified as 80/20, and the training records are randomly selected from the 80\% of the dataset, there are 2,400 training records and 600 held-out records. Before the classifier is tested on the test partition, the encoder and scaler are learned during the training partition.
 
-The numerical classification results below come from the saved metric JSON for each loan product. They are training outputs, not results from retraining the models during preparation of this report. The application also retains a legacy pipeline, whose metadata is separate from the two product evaluations considered here.
+The following numerical classification is based on the metric JSON that was saved for each loan product. They are not outputs of re-training the models as part of the preparation of this report. The application also has a legacy pipeline, whose metadata is not part of the two product evaluations that have been considered.
 
 \subsection{Dataset Characteristics}
-Table~\ref{tab:dataset-summary} gives the counts read from the current CSVs. Both products have close to balanced approval and rejection labels. Neither file contains missing cells or duplicate complete rows in the inspected data.
+Table~\ref{tab:dataset-summary} provides the counts from the current CSVs. Rejections outnumber approvals in both products. There are no missing cells or duplicate complete rows in either file of the data checked.
 
 \begin{table}[htbp]\centering\small
 \caption{Current generated datasets}\label{tab:dataset-summary}
 \begin{tabular}{lrrrr}\toprule
 Product & Records & Columns & Approved & Rejected\\\midrule
-Home loan & 3,000 & 18 & 1,529 & 1,471\\
-Personal loan & 3,000 & 17 & 1,563 & 1,437\\\bottomrule
+Home loan & 3,000 & 18 & 968 & 2,032\\
+Personal loan & 3,000 & 17 & 1,368 & 1,632\\\bottomrule
 \end{tabular}\end{table}
 
-The column totals include the identifier and target. After preprocessing, the home-loan model receives 20 coordinates and the personal-loan model receives 21. One-hot encoding explains why the number of model coordinates is not the same as the number of raw predictor fields.
+The identifier and target are included in the column totals. An automatic response returns 20 coordinates for the home-loan model and 21 coordinates for the personal-loan model after the preprocessing. One-hot explains the difference between the number of model coordinates and the number of the raw predictor fields.
 
-The datasets describe authored financial scenarios. Their class balance, feature distributions and dependencies follow the generator settings. The labels are not independent observations of a bank's decisions or later borrower repayment. This makes the data useful for demonstrating the full software path while limiting claims about generalisation beyond the simulation.
+The datasets provide description of authored financial scenarios. The number of students in their class follows the number of students set in the generator, and their feature distributions and dependencies are set the same as in the generator. The labels are not independent observations of a bank's decision-making or later borrower repayment. This allows the data to be applied to illustrate the entire software flow without generalizing beyond the simulation.
 
 \section{Classification Results}
 \subsection{Saved Classification Metrics}
@@ -31,59 +31,59 @@ Table~\ref{tab:model-performance} reports the stored metrics. Both classifiers r
 \caption{Saved product-model test metrics}\label{tab:model-performance}
 \begin{tabularx}{\textwidth}{l*{5}{>{\centering\arraybackslash}X}}\toprule
 Product & Accuracy & Precision & Recall & F1 & ROC-AUC\\\midrule
-Home loan & 0.9700 & 0.9615 & 0.9804 & 0.9709 & 0.9978\\
-Personal loan & 0.9733 & 0.9744 & 0.9744 & 0.9744 & 0.9963\\\bottomrule
+Home loan & 0.9850 & 0.9602 & 0.9948 & 0.9772 & 0.9989\\
+Personal loan & 0.9650 & 0.9703 & 0.9526 & 0.9613 & 0.9971\\\bottomrule
 \end{tabularx}\end{table}
 
-Accuracy is 97.00\% for the home-loan model and 97.33\% for the personal-loan model. In these files, precision and recall concern the approved class. ROC-AUC describes how the approval scores rank the two labelled classes over thresholds. The metrics do not express the financial cost of a wrong approval or a wrong rejection.
+The home-loan model has an accuracy of 98.50\%, while the personal-loan model has an accuracy of 96.50\%. For these files, precision and recall are related to the approved class. ROC-AUC is the ability of the approval scores to rank the two classes that are labeled with respect to thresholds. The metrics do not represent the monetary value of an incorrect approval or a rejected approval.
 
 \reportgraph{figures/graphs/saved_model_metrics.pdf}{0.96}{7.0}{Saved classifier metrics}{Classification metrics taken from the current product metric files; each evaluation uses 600 held-out records.}{graph:saved-metrics}
 
-The graph uses a zero-based vertical scale so that the small numerical differences are not visually exaggerated. The two products also use different feature sets and label rules, so their scores should not be treated as a controlled comparison of one lending task against another.
+The graph has a vertical axis to zero to avoid making the numerical differences seem too large. They also differ in terms of the features and labelling rules included in them, and therefore, their scores should not be interpreted as a controlled comparison between one lending task and another.
 
 \subsection{Interpretation of Predictive Performance}
-The high scores are consistent with the generated labels being determined by explicit financial and credit relationships. A tree ensemble can learn those relationships effectively when similar patterns occur in training and test records. A held-out split reduces direct reuse of fitted records, but it still samples from the same generator.
+High scores are coherent with explicitly financial and credit relationships determining the generated labels. Those relationships can be learned well by a tree ensemble if similar occurrences of the patterns exist in training and test records.
 
-A more demanding assessment would involve independently obtained records, time-based testing or deliberately shifted distributions. The saved results do not contain such an evaluation. They also do not include repeated split estimates, calibration curves or product-specific saved confusion matrices. No confusion matrix is reconstructed here from rounded aggregate metrics.
+The saved results also include independently generated synthetic records and boundary cases. Independent-set accuracy is 98.10\% for home loans and 97.60\% for personal loans; boundary-set accuracy is 77.33\% and 80.56\%, respectively. Confusion matrices are saved for these evaluations. Real lending records, time-based testing, repeated splits and calibration curves would require further evaluation.
 
-The personal-loan model's slightly higher accuracy does not establish that unsecured lending is easier to model. It is a result of these particular generated datasets, feature functions and fitted models. A change to the generator or the target definition could change that ordering.
+The difference in accuracy is not enough to conclude that either lending task is inherently easier to model. These are generated data sets, feature functions and fitted models. That ordering can be changed by a change to the generator or target definition.
 
 \section{Group Approval-Rate Ratios}
-The training scripts calculate the female-to-male predicted approval-rate ratio on the test partition. The saved ratio is 0.9058 for home loans and 0.8648 for personal loans. A ratio below one means that the female group's predicted approval rate is lower in that test sample. It is not itself the probability that a particular female application is rejected.
+Approval-rate ratios compare predicted approval rates across groups in an evaluation sample. The current saved product metrics do not report the earlier female-to-male approval-rate ratios, so those values are not presented as current results.
 
-The generator contains a deliberate Gender-dependent adjustment. For female records in a defined borderline region, 0.65 is subtracted from a latent score before labels are assigned. This is a change to the generator's score, not a 65-percentage-point adjustment to the classifier's probability. Because Gender is also included among the predictors, the learning problem can contain a direct Gender dependency.
+The current label generator does not apply a Gender-dependent adjustment. Gender is still a predictor, however, so removing that adjustment does not establish that the trained model is fair or independent of Gender.
 
-These ratios therefore need to be read alongside the data construction. They describe the synthetic test split and do not establish whether eligible applicants receive equal treatment. The online fairness score asks a different question: how much one record's approval probability changes after a Gender flip. A high value for that local score is compatible with a non-unit approval-rate ratio across groups.
+Any future group ratios should be interpreted in conjunction with the synthetic data construction and do not alone establish whether eligible applicants are treated equally. The online fairness score asks a different question: how does the probability of approval for one record change upon a Gender flip?
 
 \section{Explanation and Trust Score Discussion}
 \subsection{Reading Local SHAP and LIME Output}
-The application returns a local contribution for each transformed model feature. The dashboard ranks contributions by magnitude and uses direction to distinguish support for approval from contributions against it. An officer can inspect the two methods alongside the submitted financial details.
+For each feature of the model that is transformed, the application returns a local contribution. The dashboard sorts contributions by size and infers support for or against an approval using the direction of the sort. An officer will review the two methods in conjunction with the financial information submitted.
 
-For SHAP, a positive contribution supports a larger approval output in the explained margin space. It is not a statement that the feature causes repayment. LIME coefficients refer to the tabular explainer's local conditions and approximation. Their numerical magnitudes should not be compared directly with SHAP's raw-margin values.
+For SHAP, there is a positive contribution associated with a larger approval output of the explained margin space. It is not a fact that the feature makes repayment. LIME coefficients are local conditions and approximation of the tabular explainer. The values for these should not be compared directly with the raw-margin values from SHAP.
 
-One practical interpretation concerns a rejected application. A large negative contribution can be an important reason for rejection even though the chart's negative side is sometimes informally called a risk side. The sign is defined relative to the approval output. It does not indicate that an explanation is invalid or that a field is financially undesirable in every context.
+One application is a practical interpretation, which relates to a rejected application. Sometimes the negative side of the chart is referred to as the risk side, but a large negative contribution can be an important factor in rejection. The sign is based on the approval of the output. Does not mean necessarily that an explanation is false or that a field is a financially bad choice in all situations.
 
-The saved product metrics do not provide a cohort-wide distribution of explanation quality. Individual charts support review of the selected assessment, while an average explanation-performance claim would require a fixed set of cases and a documented evaluation procedure.
+The saved product metrics give no indication of the explanation quality on a cohort level. Individual charts are available to review the selected assessment and an average explanation-performance claim might include a set of cases and the recording of an evaluation procedure.
 
 \subsection{Interpreting the Four Diagnostic Scores}
-The current faithfulness value comes from masked SHAP coordinates and the custom piecewise scaling in Chapter 5. Its high-score band is a property of that mapping. It is not an independently estimated probability that the explanation is correct. Zero masking can also create a transformed point that does not correspond to a coherent applicant.
+Faithfulness measures how closely the shortened SHAP and LIME explanations reconstruct the model's approval probability for the original application. It is not a probability that an explanation is correct and does not test behaviour on other applications.
 
-Stability measures rank correlation after one specified Gaussian perturbation. Strong rank agreement in that test is useful local information, but it does not cover all financially meaningful changes. The implementation checks SHAP in this way; it does not perform a repeated, raw-input LIME robustness study.
+Stability compares SHAP feature rankings and directions across the constructed nearby financial applications. A high mean does not guarantee stability under all meaningful changes; the lowest similarity and model decision changes should also be reviewed. The procedure does not perform a separate LIME stability study.
 
-Consistency records overlap in the top-three feature names. Complete overlap can occur even when the methods assign different signs to those names. A user should therefore inspect the comparison table as well as the scalar. The fairness component is similarly narrow: it measures a binary input flip for one profile, with an exception fallback that limits its reliability as a stand-alone audit.
+Consistency combines the overlap of the leading five features with agreement in their contribution directions. The separate fairness check measures sensitivity to a binary Gender flip and cannot establish group or causal fairness. A zero fairness value can also indicate that the check failed.
 
-These limitations do not make the values meaningless. They define what the values can be used to discuss. The scores make the current procedures visible, while a stronger claim about explanation trust would require evidence that those procedures distinguish useful explanations from misleading ones.
+The values are not meaningless because of these limitations. They inform the definition of the things that the values can be discussed with. The scores make the current procedures visible and a stronger claim about explanation trust would need evidence about the ability of these procedures to distinguish between helpful and misleading explanations.
 
 \subsection{Prediction Probability and Composite Trust Score}
-Prediction confidence is the model's probability for the selected class. For an approved result it equals the approval probability; for a rejected result it is one minus that probability. No separate probability-calibration procedure is included in the product training scripts.
+The model's probability in the chosen class is the prediction confidence. If the result is accepted it is the same as the probability of approval, if the result is rejected it is one minus that probability. Product Training Scripts do not contain a separate probability-calibration procedure.
 
-The Trust Score is a weighted summary of explanation-related diagnostics. Its interpretation depends on those diagnostics and the chosen weights. A high confidence value can accompany an explanation that warrants review, and a high Trust Score cannot establish that the original prediction is accurate or fair.
+For new assessments the Trust Score equally averages faithfulness, stability and consistency; the Gender-sensitivity check is reported separately. The score depends on the definitions and selected weights, and neither a high Trust Score nor high prediction confidence establishes that the decision is accurate or fair. Older saved records retain their recorded scores and weights.
 
-The route's display bands use 0.85 and 0.70 to label the composite. These are application rules. The current code does not implement an A/B/C/D grading system or externally validated acceptance boundaries. The report therefore describes the saved weighted index without treating its label as lending approval authority.
+The composite is labeled by the route's display bands with 0.85 and 0.70. These are the rules to apply when the application is in use. There isn't a grading scheme or external validation of acceptance boundaries in the current code. The report does not therefore suggest that any lender is an authority on these saved weighted indexes as a label.
 
 \section{Application Outcomes and Main Findings}
 \subsection{Interface and Reporting Outcomes}
-The interface supports product selection, application entry, result inspection and submitted-form review. Officer-facing screens add detailed explanation comparisons, stored history and batch actions. The same response structure is available to the PDF endpoint, which produces a document containing applicant, decision, financial and diagnostic information.
+The interface provides product selection, input application, checking results, and checking the filled-in application. There are also two new features for the officer mode: explanation comparisons, which are detailed, and history/batch actions, which are stored. The PDF endpoint also uses the same response structure to return PDFs with applicant, decision, financial and diagnostic data.
 
 \begin{table}[htbp]\centering\small
 \caption{Information available in the assessment workflow}\label{tab:interface-results}
@@ -98,12 +98,12 @@ PDF export & Application reference, financial summary, decision information and 
 What-if calculator & Recalculated instalment and affordability ratios for changed financial inputs.\\\bottomrule
 \end{tabularx}\end{table}
 
-The what-if output remains an arithmetic scenario. It does not establish a changed XGBoost decision. Similarly, the PDF communicates an assessment; the project does not implement a signed sanction record or a verified institutional approval workflow.
+The what-if output is still an arithmetic scenario. It does NOT set a new XGBoost decision. Likewise, the PDF states an evaluation; the project does not provide for a signed sanction record or a verified institutional approval process.
 
 \subsection{Main Findings}
-The available results support two conclusions. First, the saved product evaluations show high classification performance on the project's generated hold-out labels. Second, the software connects prediction with local explanation, explicit diagnostics, stored records and report generation in one application.
+There are two conclusions that can be drawn from the results that were available. For the first, the saved product evaluations demonstrate high classification performance with hold-out labels generated by the project. Second, the software is integrated with prediction and local explanation, explicit diagnostics, stored records and report generation within a single application.
 
-The evidence is narrower than real-world lending validation. Synthetic label assumptions, the deliberate Gender adjustment, custom metric scaling and the local explanation settings all affect the interpretation. These findings identify useful directions for further evaluation without presenting unmeasured properties as completed results.
+The evidence is more limited than lending validation for the real world. Interpretation is influenced by synthetic label assumptions, custom metric definitions, and local explanation settings. These results are informative about the directions for further assessment but do not offer properties that are measured and finished results.
 
 \par\medskip\noindent
-This chapter has presented the current data counts, saved classifier metrics and group approval-rate ratios. It has also examined the meaning of the local explanations, the four diagnostics and the outputs visible in the application, separating those findings from broader claims that the evidence does not support.
+This chapter included the latest counts of data and saved classifier metrics and discussed group approval-rate ratios. It has also considered the significance of local explanations, the four diagnostics and the outputs that one sees in the application, identifying them from generalisations that the evidence does not warrant.
