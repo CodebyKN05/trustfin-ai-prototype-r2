@@ -24,11 +24,11 @@ SHAP and LIME provide two different views of the same model response. SHAP assig
 An explanation is also not a guarantee that the model behaves well. A model may rely on an unsuitable attribute, and an accurate explanation may reveal that dependence. Conversely, a plausible-looking explanation may describe the model poorly. The project therefore includes checks on the explanations instead of treating a generated chart as sufficient evidence of reliability.
 
 \subsection{Project Motivation}
-The initial question that led to the creation of TrustFin AI is what extra information should be included in the output of a loan model, so that a person can sensibly review it? The application does so by addressing the following local reasons, repayment calculations, explanation diagnostics and saved assessment records.
+The question behind TrustFin AI is what information should accompany a loan prediction so that a person can review it. The application brings together local explanations, repayment calculations, explanation checks and saved assessment records.
 
-The two-product structure provides detail to the problem that is useful. While property value and loan-to-value ratio have been important to the home-loan pipeline, purpose and credit-card utilisation are important to the personal-loan pipeline. Having separate models prevents interpretation of fields that are not relevant to the product.
+The two-product structure also reflects the different information needed for each loan. Property value and loan-to-value ratio are used in the home-loan pipeline, while loan purpose and credit-card utilisation are used in the personal-loan pipeline. Separate models allow each product to use its relevant fields.
 
-The second reason is that it helps to maintain separate classifications of various types of evidence. Predictive accuracy is about the performance on labelled records. The output probability is known as model confidence. An explanation is a description of the contributions in features and the Trust Score is a combination of the project's diagnostic checks. These values are all present in the workflow, but should not be interpreted as being synonymous with measures of quality.
+The system also keeps different types of evidence separate. Predictive accuracy describes performance on labelled records, while model confidence is based on the output probability. An explanation describes feature contributions, and the Trust Score combines the project's explanation checks. These values answer different questions and should not be treated as interchangeable measures of quality.
 
 \section{Aim and Objectives}
 The goal is to create an application for decision-making support, where the prediction is product-specific and there are local explanations for this prediction, as well as explicit checks of these explanations.
@@ -44,19 +44,19 @@ The aims are to:
 \item Present, store, retrieve and export assessments via the web application.
 \end{enumerate}
 
-The current software are described by these objectives. They are not relying on the validity of the resulting model or Trust Score for lending operations to have been independently validated.
+These objectives describe the current software. They do not imply that the model or Trust Score has been independently validated for lending operations.
 
 \section{Scope of the Project}
 The application supports single-record evaluation, product-specific forms, batch CSV and JSON processing, an applicant view, bank-officer views, evaluation history and downloadable PDF reports. A what-if calculator allows users to change selected affordability inputs and inspect the resulting instalment and repayment ratio.
 
 The calculator performs financial arithmetic in the browser. Moving a slider does not submit a fresh prediction request. Its result is therefore an affordability illustration, not a promise that the model will approve a changed application. The officer and applicant modes are also presentation choices; the source does not implement authenticated accounts or server-side role permissions.
 
-In the current work, there is no link to a bank, no retrieval of real time bureau information, there is no setting of an institution's credit policy nor a legally binding lending decision. However, repayment rates information and probability calibration, secure deployment and population fairness monitoring are not in the scope of the evaluated. The boundaries enable the project to be evaluated on the project's actual delivery - an integrated academic system for inspection of model based loan assessments.
+The current system is not connected to a bank or a live credit bureau and does not make a legally binding lending decision. Its project policy is not an institution's credit policy. Repayment outcomes, probability calibration, secure deployment and population fairness monitoring are outside the present evaluation. The project is assessed as an academic system for reviewing model-based loan assessments.
 
 \section{Approach Followed}
 The process starts when the user chooses a product and fills a form requesting information about the product. The backend normalises the values sent, computes financial features and applies the selected preprocessor to the value. XGBoost provides the class and approval probability. SHAP and LIME then give explanations for the modified record and the validation functions compute their diagnostic values.
 
-The output of the response is separated, thereby allowing for a non-collapsing of the interface showing the model result, solvency information and explanation checks. The route also will try to preserve the assessment. The response structure is the same for History and PDF, making it easier for the user to follow a displayed response to the submitted application.
+The response keeps the model result, financial summary and explanation checks separate in the interface. The route also attempts to save the assessment. History and PDF reporting use the assessment data to help the user trace the result back to the submitted application.
 
 \section{Organisation of the Report}
 Chapter 2 reviews related research and Chapter 3 sets out the requirements. Design and Implementation are discussed in Chapters 4 and 5. Verification and results are covered in Chapters 6 and 7. The work plan is presented in Chapter 8 and limitations and future directions are given in Chapter 9.

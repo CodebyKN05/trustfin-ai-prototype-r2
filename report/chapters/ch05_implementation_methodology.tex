@@ -88,7 +88,7 @@ Let $p$ be the model's probability for approval and $\hat y$ its predicted class
 It is the model probability of the predicted class. These product models do not have a separate calibration method like isotonic regression or Platt scaling in the repository. Thus, it is not an explanation-reliability measure or a verified calibration estimate, but a prediction-confidence representation.
 
 \subsection{SHAP Implementation}
-The model registry initializes a \texttt{SHAPExplainer} with \texttt{shap}. For every XGBoost classifier, we use TreeExplainer. For each application the transformed feature vector is passed to the explainer. The implementation returns one feature record for each model feature transformed, extracts the contribution vector, maps the sign to positive, negative or neutral direction. Local contribution values are not percentages of the probability of approval, but rather values in the output space of the SHAP explainer. When displaying raw values for one-hot and engineered features, be careful that the feature name does not not match a raw applicant field.
+The model registry initializes a \texttt{SHAPExplainer} using \texttt{shap}. For each application, the transformed feature vector is passed to TreeExplainer. The implementation returns a record for each transformed model feature and labels each contribution as positive, negative or neutral. The contribution values are in the SHAP explainer's output space and are not approval percentages. One-hot and engineered feature names do not always correspond directly to raw applicant fields.
 
 \subsection{LIME Implementation}
 The \texttt{LIMEExplainer} is a wrapper for \texttt{lime.lime\_tabular.LimeTabularExplainer}. The explainer is given the transformed training background and model feature names. For an explanation of an input, it invokes the \texttt{predict\_proba} method of the classifier and asks for the votes for the accepted class. The route uses a deterministic seed generated from the input JSON, via the SHA-256 function, before executing LIME. This is to ensure repeatable sampling of the same input in a consistent software configuration, but does not guarantee that all versions of a library or all hardware configurations will yield identical results bitwise.
@@ -190,11 +190,12 @@ Output: prediction response y
 3. Derive EMI, FOIR, and (for home loans) LTV features
 4. Transform the row with the product's fitted preprocessor
 5. Obtain model class y_hat and approval probability p
-6. Generate SHAP and LIME local explanations
-7. Calculate faithfulness, stability, consistency, and gender-flip scores
-8. Calculate weighted Trust Score and predicted-class probability value
-9. Generate product-prefixed dossier ID
-10. Persist record when database session is available; return response
+6. Apply the product policy check separately from the model result
+7. Generate SHAP and LIME local explanations
+8. Calculate faithfulness, stability, consistency, and gender-flip scores
+9. Calculate weighted Trust Score and predicted-class probability value
+10. Generate product-prefixed dossier ID
+11. Persist record when database session is available; return response
 \end{lstlisting}
 \end{minipage}\par\medskip
 

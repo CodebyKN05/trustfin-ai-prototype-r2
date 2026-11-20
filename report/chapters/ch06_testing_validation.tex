@@ -25,7 +25,7 @@ The checks that are available include software contracts, financial arithmetic a
 \subsection{Dataset and Preprocessing Checks}
 Each of the current product CSVs has 3,000 records. Checks row and column counts, missing values, duplicate complete rows, supported target labels and product-specific fields. These checks can be used to identify a shape change in the data that was not intentional before training or inference can proceed to more complex failure.
 
-The target is separated from the predictors, which are the target and loan identifier. The training is done with 80\% of the records for training and 20\% for test. The categorical encoder and numerical scaler are only fit on the training predictors. The output order should match with the feature names saved next to the classifier.
+The target and loan identifier are excluded from the predictors. The training is done with 80\% of the records for training and 20\% for test. The categorical encoder and numerical scaler are only fit on the training predictors. The output order should match with the feature names saved next to the classifier.
 
 A helpful pre-processing check: one record goes through the feature function and fitted transformer. It checks that the resulting vector contains the desired number of coordinates: 20 for the home-loan pipeline and 21 for the personal-loan pipeline. This is not a check of the desired outcome of the resulting prediction, it is a representation check.
 
@@ -34,7 +34,7 @@ The feature functions calculate amortised EMI, FOIR and for home loans, LTV. The
 
 The monthly commitment is for the current EMI as well as the proposed EMI. Leaving out the balance due can make an application look more affordable than it is. The FOIR for a home-loan is based on the total income of the applicant and co-applicant, whereas the FOIR for a personal-loan is based on the applicant's income. The boundary cases are thus to be tested separately for the two products.
 
-The API classifies the financial status as optimal up to 35\%, moderate from 35\% to 50\%, and insolvent from 50\% and up. Values just below, just at and just above a boundary are good values to compare with in comparison operators and rounding. These are project categories that are set up. A test should not assume that the model class is overwritten when the financial summary becomes insolvent, as the current route returns those outputs separately.
+The API classifies the financial status as optimal up to and including 35\%, moderate above 35\% up to and including 50\%, and insolvent above 50\%. Values just below, just at and just above a boundary are good values to compare with in comparison operators and rounding. These are project categories that are set up. A test should not assume that the model class is overwritten when the financial summary becomes insolvent, as the current route returns those outputs separately.
 
 \subsection{Model Evaluation Procedure}
 The evaluation of each product training script is based on 600 held out records with accuracy, precision, recall, F1-score and ROC-AUC. The two partitions have a similar distribution of labels. A fixed seed is used to reproduce the partition in an environment that is compatible.
@@ -78,7 +78,7 @@ The deletion checks are about the evaluation or batch identified by its identifi
 \section{Interface and PDF Checks}
 Frontend tests include certain form interactions, API requests, history displays and batch upload paths. In addition to those interactions, a review should be done to compare the result in the applicant view to the summary and audit views of the same response. The same model output should not be presented in different ways to give conflicting messages.
 
-PDF checks ensure that the endpoint returns a readable document and that the application reference, product, amounts and scores values returned correspond to the provided assessment. The document exported is an assessment report and a high Trust Score does not constitute a lending authorisation. The what-if calculator should also be interpreted as a financial recalculation, as it does not ask for a new output from the classifier.
+PDF checks ensure that the endpoint returns a readable document and that the application reference, product, amounts and scores correspond to the provided assessment. The exported document is an assessment report, and a high Trust Score does not constitute lending authorisation. The what-if calculator performs a financial recalculation; it does not request a new classifier output.
 
 \par\medskip\noindent
 This chapter has outlined the checks that are pertinent to data preparation, financial calculations, prediction, explanation, scoring, APIs, persistence and reporting. It has also distinguished between the more repeatable software behaviour and the more compelling evidence required to validate a model or explanation for lending use.

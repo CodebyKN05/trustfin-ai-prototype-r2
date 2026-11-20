@@ -40,7 +40,7 @@ The current wrapper supplies transformed training data to the tabular explainer 
 The distinction is especially relevant for engineered features. If income, principal and FOIR are sampled independently in transformed space, a perturbed point may no longer describe a coherent application. That is a limitation of the implemented explanation setting, even when the original submitted record is valid. It belongs in the interpretation of LIME output rather than being hidden by a repeatable random seed.
 
 \section{Evaluating Explanation Quality}
-Yeh et al. explore the concepts of explanation infidelity and sensitivity, and relate explanation evaluation to changes in the model input and output \cite{yeh2019}. Alvarez-Melis and Jaakkola investigate the robustness of explanations and the expectation that similar inputs should be explained in a similar way \cite{alvarezm2018}. In both types of employment, the evaluation process is a component of what a score means.
+Yeh et al. explore explanation infidelity and sensitivity in relation to changes in model inputs and outputs \cite{yeh2019}. Alvarez-Melis and Jaakkola investigate explanation robustness and the expectation that similar inputs should have similar explanations \cite{alvarezm2018}. In both cases, the evaluation procedure is important to the meaning of the score.
 
 TrustFin AI employs operational checks tailored to the project. Faithfulness uses top-five local concordance for SHAP and LIME; stability compares SHAP ranks and directions across nearby financial applications; and consistency combines top-five feature overlap with direction agreement. These project adaptations should not be treated as identical to the published measures that motivate them.
 
@@ -57,13 +57,9 @@ The current synthetic label-generation rules do not include a Gender-dependent a
 \subsection{Counterfactual Reasoning and Decision Support}
 Wachter, Mittelstadt and Russell talk about counterfactual explanations as changes that could lead to a different decision \cite{wachter2018}. This is not a description of features that influence the decision, but rather a question of what would have to change if a particular decision system were in place.
 
-TrustFin's affordability calculator is less comprehensive. Adjusts chosen financial variables and re-calculates instalments and repayment ratios. It does not look for the closest model-approved application, and does not call a new classifier for every slider move. It is helpful to discuss repayment capacity, but not helpful if the interface result is described as a model counterfactual.
+TrustFin's affordability calculator is less comprehensive. It adjusts selected financial variables and recalculates instalments and repayment ratios. It does not look for the closest model-approved application or call the classifier for every slider movement. It can support a discussion of repayment capacity, but its output should not be described as a model counterfactual.
 
 The NIST AI Risk Management Framework emphasizes the importance of explanation and fairness in a larger, context-specific risk-management process \cite{nistAirmf2023}. That is the perspective that the project takes when it separates model output, explanation evidence and human review. It has not had an institutional risk-management assessment.
-
-\section{Research Gap and Position of the Project}
-The research gap and position of the project is described.The research gap and position of the project is explained.
-A summary of the use of the reviewed work is given in Table~\ref{tab:literature-comparison}. It is important to note that the explanation scores are distinguished between a source method and the project's adaptation.
 
 \section{Research Gap and Position of the Project}
 Table~\ref{tab:literature-comparison} summarises how the reviewed work is used. The distinction between a source method and the project's adaptation is particularly important for the explanation scores.
@@ -89,4 +85,4 @@ The project introduces well-known tools to a review process. The connection betw
 This role also oversees the evaluation process. Reproduction of the generated labels can be evaluated using classification metrics. Explanation checks can explain behaviour in the tests that have been implemented. Another study would be required to demonstrate that the composite aids reviewers in making better decisions or reliably detecting misleading explanations.
 
 \par\medskip\noindent
-The concepts of model, explanation and fairness in TrustFin AI are reviewed in this chapter. It has pinpointed the assumptions that are carried over into the implementation and why the project's custom diagnostics need to be understood in the context of their actual procedures.
+This chapter has reviewed the concepts of prediction, explanation and fairness used in TrustFin AI. It has also identified the assumptions behind the implementation and why the project's diagnostics should be understood in the context of their actual procedures.

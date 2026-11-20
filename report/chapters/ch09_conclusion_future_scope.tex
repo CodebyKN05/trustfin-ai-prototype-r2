@@ -3,9 +3,9 @@
 This chapter brings together the project outcomes and evidence mentioned in the report. It provides a summary of the contribution of the application, pinpoints the scope of the existing assessment, and defines the subsequent development of the data, explanation validation, and operations.
 
 \section{Conclusions}
-TrustFin AI links two product-specific loan classifiers with local explanations and diagnostic checks and brings it together to a working application for a decision support. A user can upload a profile for a home-loan or a personal-loan, view the results of the model, check for the contributions of SHAP and LIME, view the financial summary and keep the assessment by history or export it as a pdf file.
+TrustFin AI brings two product-specific loan classifiers, local explanations and diagnostic checks together in a decision-support application. A user can enter a home-loan or personal-loan profile, review the model result, SHAP and LIME contributions and financial summary, and save or export the assessment.
 
-The most important one is the relationship between these functions. Prediction, explanation, financial arithmetic and persistence are usually studied in isolation from one another during development. It's easier to understand when they're in a single workflow as a submitted field, a displayed reason and a saved assessment value.
+The application connects prediction, explanation, financial calculations and record storage in one workflow. This allows a user to review the submitted details alongside the displayed result and saved assessment.
 
 The distinction of the product is also crucial. The home-loan pipeline covers property context and LTV, and personal-loan pipeline includes purpose and card utilisation. These paths are coordinated by shared application logic which does not assume that their feature definitions are the same.
 
@@ -20,11 +20,11 @@ The datasets produced include authored relationships and do not apply a Gender-d
 
 The explanation checks have limitations. Local concordance evaluates a shortened reconstruction at the original input; stability covers only the selected nearby financial changes; and consistency compares leading features and their directions. The separate fairness function compares one binary input flip. Wider validation is needed before using these checks as research-based acceptance criteria.
 
-This current application also does not provide the server-side authentication or role enforcement. The what-if calculator can calculate affordability arithmetics without a new model prediction. Records and PDFs may be stored and reviewed, but are not a cryptographically verifiable audit trail or a lending decision signed by the lender.
+The application does not provide server-side authentication or role enforcement. The what-if calculator recalculates affordability without making a new model prediction. Records and PDFs may be stored and reviewed, but they do not form a cryptographically verifiable audit trail or a lending decision signed by a lender.
 
 \section{Future Scope}
 \begin{enumerate}
-\item \textbf{Evaluation with Real Lending Records:} Future work could utilize the use of representative loan records, provided with appropriate permission with personal details removed. Testing against well-defined results, such as actual repayments (where available), would help gauge the effectiveness of the system beyond more artificially created applications.
+\item \textbf{Evaluation with Real Lending Records:} Future work could use representative loan records obtained with appropriate permission and with personal details removed. Testing against defined outcomes, such as actual repayments where available, would help assess the system beyond generated applications.
 
 \item \textbf{Broader Model Testing:} The loan models could be compared to simpler models and tested to various applicant groups and time periods. This would assist in the detection of prediction errors, changes in the distribution of loans and whether the probabilities reported match the observed results. The generated records may further be used for tests of known failure conditions.
 
@@ -38,4 +38,4 @@ This current application also does not provide the server-side authentication or
 \end{enumerate}
 
 \par\medskip\noindent
-This chapter has brought together the software contribution, the available evaluation and the limits of the current system.  It has defined the next steps in data quality, model evaluation, explanations validator and application controls to provide a firmer ground for future developments.
+This chapter has brought together the software contribution, the available evaluation and the limits of the current system. It has also identified next steps in data quality, model evaluation, explanation checks and application controls.
